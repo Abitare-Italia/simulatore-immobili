@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulatore Acquisto Personalizzato</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #f5f5f7;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 1.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 1.7rem;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 1.5rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: .3rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+    label {
+      display: block;
+      font-size: .85rem;
+      margin-bottom: .3rem;
+      color: #333;
+    }
+    input, select {
+      width: 100%;
+      padding: .4rem .5rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: .9rem;
+      box-sizing: border-box;
+    }
+    .field {
+      margin-bottom: .6rem;
+    }
+    .readonly-box {
+      background: #fafafa;
+      border-radius: 10px;
+      padding: .8rem 1rem;
+      border: 1px dashed #ddd;
+      font-size: .9rem;
+    }
+    .results {
+      background: #0f172a;
+      color: white;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-top: 1rem;
+    }
+    .results h2 {
+      border-bottom: none;
+      margin-top: 0;
+      color: white;
+    }
+    .results-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .9rem;
+      margin: .15rem 0;
+      gap: 1rem;
+    }
+    .results-row span:last-child {
+      text-align: right;
+      min-width: 140px;
+    }
+    .ok { color: #22c55e; }
+    .warn { color: #f97316; }
+    .note {
+      font-size: .8rem;
+      color: #555;
+      margin-top: .4rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Simulatore Acquisto Personalizzato</h1>
+  <div class="note">
+    Seleziona l'unità immobiliare e personalizza caparre, mese di saldo e reddito per vedere sconti, saldo e sostenibilità.
+  </div>
+
+  <h2>1. Seleziona l'unità</h2>
+  <div class="grid">
+    <div>
+      <div class="field">
+        <label for="unitaSelect">ID unità</label>
+        <select id="unitaSelect"></select>
+      </div>
+      <div class="readonly-box" id="infoUnita"></div>
+    </div>
+    <div>
+      <div class="readonly-box" id="prezziUnita"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.2rem;">
+    <h2>2. Scheda immobile</h2>
+    <div style="text-align:center;">
+      <img id="schedaImg"
+           alt="Scheda dell'unità selezionata"
+           style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.15);">
+      <div class="note">
+        L'immagine riportata è una scheda informativa con planimetria, foto e note commerciali.
+      </div>
+    </div>
+  </div>
+
+  <h2>3. Scelte dell'acquirente</h2>
+  <div class="grid">
+    <div>
+      <div class="field">
+        <label for="scenario">Scenario di prezzo (base per i calcoli)</label>
+        <select id="scenario">
+          <option value="48mesi">48 mesi + saldo mutuo</option>
+          <option value="60gg">Pagamento entro 60 giorni</option>
+          <option value="grezzo">Grezzo (se disponibile)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="meseRiscatto">Mese di saldo/riscatto (1–48)</label>
+        <input type="number" id="meseRiscatto" min="1" max="48" value="48">
+      </div>
+      <div class="field">
+        <label for="caparraPerc">Caparra iniziale (% sul prezzo di riferimento)</label>
+        <input type="number" id="caparraPerc" min="0" max="100" value="20">
+      </div>
+      <div class="field">
+        <label for="caparraAnno1">Caparra anno 1 (€)</label>
+        <input type="number" id="caparraAnno1" min="0" value="3000">
+      </div>
+      <div class="field">
+        <label for="caparraAnno2">Caparra anno 2 (€)</label>
+        <input type="number" id="caparraAnno2" min="0" value="3000">
+      </div>
+      <div class="field">
+        <label for="caparraAnno3">Caparra anno 3 (€)</label>
+        <input type="number" id="caparraAnno3" min="0" value="3000">
+      </div>
+      <div class="field">
+        <label for="redditoNetto">Reddito netto mensile (€)</label>
+        <input type="number" id="redditoNetto" min="0" value="2000">
+      </div>
+    </div>
+    <div>
+      <div class="readonly-box">
+        <div><strong>Note operative</strong></div>
+        <ul style="padding-left:1.1rem;margin:0.4rem 0;font-size:.8rem;">
+          <li>Scenario <strong>48 mesi</strong>: se il saldo è entro il mese 1 o 2, si applica automaticamente il prezzo “entro 60 giorni” senza ulteriori sconti.</li>
+          <li>Scenario <strong>60 giorni</strong>: il prezzo è già scontato, non si applicano ulteriori sconti.</li>
+          <li>Scenario <strong>Grezzo</strong>: nessuno sconto aggiuntivo; il saldo deve comunque avvenire entro 60 giorni per accordo commerciale.</li>
+          <li>Gli sconti per saldo anticipato (36/24/12 canoni) si applicano solo allo scenario 48 mesi, con saldo entro il 24° mese.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>4. Risultati della simulazione</h2>
+  <div class="results" id="resultsBox">
+    <div class="results-row">
+      <span>Prezzo di riferimento per la simulazione</span>
+      <span id="outPrezzoRif"></span>
+    </div>
+    <div class="results-row">
+      <span>Caparra iniziale</span>
+      <span id="outCaparraIniziale"></span>
+    </div>
+    <div class="results-row">
+      <span>Totale caparre versate prima del saldo</span>
+      <span id="outTotCaparre"></span>
+    </div>
+    <div class="results-row">
+      <span>Quota di prezzo già versata</span>
+      <span id="outQuotaVersata"></span>
+    </div>
+    <div class="results-row">
+      <span>Canone teorico pieno / ridotto</span>
+      <span id="outCanoni"></span>
+    </div>
+    <div class="results-row">
+      <span>Sconto per saldo anticipato</span>
+      <span id="outScontoEuro"></span>
+    </div>
+    <div class="results-row">
+      <span>Sconto per saldo anticipato (% sul prezzo di riferimento)</span>
+      <span id="outScontoPerc"></span>
+    </div>
+    <div class="results-row">
+      <span>Saldo finale al mese di riscatto</span>
+      <span id="outSaldoFinale"></span>
+    </div>
+    <div class="results-row">
+      <span>Importo mutuo ipotizzato</span>
+      <span id="outMutuo"></span>
+    </div>
+    <div class="results-row">
+      <span>Rata mutuo mensile (30 anni, 2,8%)</span>
+      <span id="outRata"></span>
+    </div>
+    <div class="results-row">
+      <span>Rapporto rata / reddito</span>
+      <span id="outRapporto"></span>
+    </div>
+    <div class="results-row">
+      <span>Esito sostenibilità</span>
+      <span id="outEsito"></span>
+    </div>
+    <div class="results-row">
+      <span>Prezzo complessivo pagato (caparre + saldo), al netto dello sconto</span>
+      <span id="outPrezzoNetto"></span>
+    </div>
+    <div class="note">
+      Questo è uno strumento di simulazione indicativa e non costituisce proposta contrattuale. I valori reali andranno confermati con il venditore.
+    </div>
+  </div>
+</div>
+
+<script>
+const formatterEuro = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+const formatterPerc = new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+
+
+const unita = [
+  {
+    "id": "ED3_INT_2",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 209,
+    "valoreMercato": 385000,
+    "prezzo48": 357500,
+    "prezzo60": 316250,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 12000,
+    "canoneMensile": 1000,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED3_INT_2.png"
+  },
+  {
+    "id": "ED3_INT_3",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 209,
+    "valoreMercato": 385000,
+    "prezzo48": 357500,
+    "prezzo60": 316250,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 12000,
+    "canoneMensile": 1000,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED3_INT_3.png"
+  },
+  {
+    "id": "ED3_INT_4",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 379,
+    "valoreMercato": 432600,
+    "prezzo48": 401700,
+    "prezzo60": 355350,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 13200,
+    "canoneMensile": 1100,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED3_INT_4.png"
+  },
+  {
+    "id": "ED4_INT_1",
+    "descrizioneBreve": "Duplex 4 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 4 locali",
+    "supTotMq": 353,
+    "valoreMercato": 442120,
+    "prezzo48": 410540,
+    "prezzo60": 394750,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 14400,
+    "canoneMensile": 1200,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED4_INT_1.png"
+  },
+  {
+    "id": "ED4_INT_4",
+    "descrizioneBreve": "Duplex 4 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 4 locali",
+    "supTotMq": 204,
+    "valoreMercato": 369040,
+    "prezzo48": 329500,
+    "prezzo60": 316320,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 12000,
+    "canoneMensile": 1000,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED4_INT_4.png"
+  },
+  {
+    "id": "ED4_INT_5",
+    "descrizioneBreve": "Duplex 4 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Duplex 4 locali",
+    "supTotMq": 376,
+    "valoreMercato": 418133,
+    "prezzo48": 373333,
+    "prezzo60": 358400,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 13200,
+    "canoneMensile": 1100,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED4_INT_5.png"
+  },
+  {
+    "id": "ED4_INT_10",
+    "descrizioneBreve": "Attico - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 3",
+    "tipologia": "Attico",
+    "supTotMq": 218,
+    "valoreMercato": 529200,
+    "prezzo48": 499905,
+    "prezzo60": 498983,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 18000,
+    "canoneMensile": 1500,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED4_INT_10.png"
+  },
+  {
+    "id": "ED5A_INT_1",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 13",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 361,
+    "valoreMercato": 411600,
+    "prezzo48": 382200,
+    "prezzo60": 338100,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 13200,
+    "canoneMensile": 1100,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED5A_INT_1.png"
+  },
+  {
+    "id": "ED5A_INT_2",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 13",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 231,
+    "valoreMercato": 372400,
+    "prezzo48": 345800,
+    "prezzo60": 312550,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 12000,
+    "canoneMensile": 1000,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED5A_INT_2.png"
+  },
+  {
+    "id": "ED5A_INT_8",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Alessandro Volta 13",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 165,
+    "valoreMercato": 312200,
+    "prezzo48": 289900,
+    "prezzo60": 267600,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 10800,
+    "canoneMensile": 900,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED5A_INT_8.png"
+  },
+  {
+    "id": "ED5B_INT_2",
+    "descrizioneBreve": "Duplex 5 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via F. Petrarca 62",
+    "tipologia": "Duplex 5 locali",
+    "supTotMq": 784,
+    "valoreMercato": 808464,
+    "prezzo48": 729383,
+    "prezzo60": 650302,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 18000,
+    "canoneMensile": 1500,
+    "note": "Immobile finito Nuova C.",
+    "schedaImg": "immagine/ED5B_INT_2.png"
+  },
+  {
+    "id": "APP_1",
+    "descrizioneBreve": "Appartamento - Marigliano",
+    "comune": "Marigliano",
+    "indirizzo": "Via Luigi Mautone 91",
+    "tipologia": "Appartamento",
+    "supTotMq": 103,
+    "valoreMercato": 226550,
+    "prezzo48": 199955,
+    "prezzo60": 177300,
+    "prezzoGrezzo": 152675,
+    "flagGrezzo": true,
+    "renditaAnnua": 9000,
+    "canoneMensile": 750,
+    "note": "Acquistabile da rifinire N.C.",
+    "schedaImg": "immagine/APP_1.png"
+  },
+  {
+    "id": "APP_2",
+    "descrizioneBreve": "Appartamento - Marigliano",
+    "comune": "Marigliano",
+    "indirizzo": "Via Luigi Mautone 91",
+    "tipologia": "Appartamento",
+    "supTotMq": 91,
+    "valoreMercato": 186755,
+    "prezzo48": 163980,
+    "prezzo60": 141205,
+    "prezzoGrezzo": 118430,
+    "flagGrezzo": true,
+    "renditaAnnua": 8400,
+    "canoneMensile": 700,
+    "note": "Acquistabile da rifinire N.C.",
+    "schedaImg": "immagine/APP_2.png"
+  },
+  {
+    "id": "APP_3",
+    "descrizioneBreve": "Appartamento - Marigliano",
+    "comune": "Marigliano",
+    "indirizzo": "Via Luigi Mautone 91",
+    "tipologia": "Appartamento",
+    "supTotMq": 103,
+    "valoreMercato": 233938,
+    "prezzo48": 211775,
+    "prezzo60": 187150,
+    "prezzoGrezzo": 162525,
+    "flagGrezzo": true,
+    "renditaAnnua": 9600,
+    "canoneMensile": 800,
+    "note": "Acquistabile da rifinire N.C.",
+    "schedaImg": "immagine/APP_3.png"
+  },
+  {
+    "id": "APP_4",
+    "descrizioneBreve": "Appartamento - Marigliano",
+    "comune": "Marigliano",
+    "indirizzo": "Via Luigi Mautone 91",
+    "tipologia": "Appartamento",
+    "supTotMq": 91,
+    "valoreMercato": 191310,
+    "prezzo48": 168535,
+    "prezzo60": 145760,
+    "prezzoGrezzo": 122985,
+    "flagGrezzo": true,
+    "renditaAnnua": 9000,
+    "canoneMensile": 750,
+    "note": "Acquistabile da rifinire N.C.",
+    "schedaImg": "immagine/APP_4.png"
+  },
+  {
+    "id": "APP_PP",
+    "descrizioneBreve": "Appartamento - Sant'Anastasia",
+    "comune": "Sant'Anastasia",
+    "indirizzo": "Via Villa Felice 100",
+    "tipologia": "Appartamento",
+    "supTotMq": 243,
+    "valoreMercato": 233625,
+    "prezzo48": 193575,
+    "prezzo60": 159933,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 8400,
+    "canoneMensile": 700,
+    "note": "Molto Buono",
+    "schedaImg": "immagine/APP_PP.png"
+  },
+  {
+    "id": "APP_PT_EST",
+    "descrizioneBreve": "Appartamento - Sant'Anastasia",
+    "comune": "Sant'Anastasia",
+    "indirizzo": "Via Villa Felice 100",
+    "tipologia": "Appartamento",
+    "supTotMq": 100,
+    "valoreMercato": 139500,
+    "prezzo48": 116250,
+    "prezzo60": 93000,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 6000,
+    "canoneMensile": 500,
+    "note": "Normale",
+    "schedaImg": "immagine/APP_PT_EST.png"
+  },
+  {
+    "id": "APP_PT_OVEST",
+    "descrizioneBreve": "Appartamento - Sant'Anastasia",
+    "comune": "Sant'Anastasia",
+    "indirizzo": "Via Villa Felice 100",
+    "tipologia": "Appartamento",
+    "supTotMq": 141,
+    "valoreMercato": 165300,
+    "prezzo48": 139200,
+    "prezzo60": 113100,
+    "prezzoGrezzo": null,
+    "flagGrezzo": false,
+    "renditaAnnua": 6600,
+    "canoneMensile": 550,
+    "note": "Ristrutturato",
+    "schedaImg": "immagine/APP_PT_OVEST.png"
+  },
+  {
+    "id": "ED7_INT_2",
+    "descrizioneBreve": "Duplex 6 locali - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via San Francesco 27",
+    "tipologia": "Duplex 6 locali",
+    "supTotMq": 444,
+    "valoreMercato": 616800,
+    "prezzo48": 578400,
+    "prezzo60": 540000,
+    "prezzoGrezzo": 444000,
+    "flagGrezzo": true,
+    "renditaAnnua": 18000,
+    "canoneMensile": 1500,
+    "note": "Acquistabile da rifinire N.C.",
+    "schedaImg": "immagine/ED7_INT_2.png"
+  },
+  {
+    "id": "V_PP",
+    "descrizioneBreve": "Appartamento - Volla",
+    "comune": "Volla",
+    "indirizzo": "Via Vittorio Emanuele 134",
+    "tipologia": "Appartamento",
+    "supTotMq": 205,
+    "valoreMercato": 209000,
+    "prezzo48": 187000,
+    "prezzo60": 165000,
+    "prezzoGrezzo": 121000,
+    "flagGrezzo": true,
+    "renditaAnnua": 8160,
+    "canoneMensile": 680,
+    "note": "Acquistabile da rifinire",
+    "schedaImg": "immagine/V_PP.png"
+  }
+];
+
+
+const unitaSelect = document.getElementById('unitaSelect');
+const scenarioSel = document.getElementById('scenario');
+const meseInput = document.getElementById('meseRiscatto');
+const caparraPercInput = document.getElementById('caparraPerc');
+const cap1Input = document.getElementById('caparraAnno1');
+const cap2Input = document.getElementById('caparraAnno2');
+const cap3Input = document.getElementById('caparraAnno3');
+const redditoInput = document.getElementById('redditoNetto');
+
+function popolaSelect() {
+  unita.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = `${u.id} – ${u.descrizioneBreve}`;
+    unitaSelect.appendChild(opt);
+  });
+}
+
+function getUnitaCorrente() {
+  const id = unitaSelect.value;
+  return unita.find(u => u.id === id) || unita[0];
+}
+
+function aggiornaInfoUnita() {
+  const u = getUnitaCorrente();
+  const info = document.getElementById('infoUnita');
+  const prezzi = document.getElementById('prezziUnita');
+
+  info.innerHTML = `
+    <div><strong>${u.id}</strong> – ${u.tipologia}</div>
+    <div>${u.comune} – ${u.indirizzo}</div>
+    <div>Superficie totale: <strong>${u.supTotMq} mq</strong></div>
+    <div>Rendita annua teorica: <strong>${formatterEuro.format(u.renditaAnnua)}</strong></div>
+    <div>Canone mensile teorico pieno: <strong>${formatterEuro.format(u.canoneMensile)}</strong></div>
+  `;
+
+  prezzi.innerHTML = `
+    <div><strong>Valore di mercato:</strong> ${formatterEuro.format(u.valoreMercato)}</div>
+    <div><strong>Prezzo 48 mesi + saldo mutuo:</strong> ${formatterEuro.format(u.prezzo48)}</div>
+    <div><strong>Prezzo in offerta entro 60 giorni:</strong> ${formatterEuro.format(u.prezzo60)}</div>
+    <div><strong>Prezzo al grezzo:</strong> ${
+      u.prezzoGrezzo ? formatterEuro.format(u.prezzoGrezzo) : "<span style='color:#6b7280'>non previsto</span>"
+    }</div>
+  `;
+
+  const img = document.getElementById('schedaImg');
+  if (u.schedaImg) {
+    img.src = u.schedaImg;
+    img.style.display = "inline-block";
+  } else {
+    img.src = "";
+    img.style.display = "none";
+  }
+}
+
+function calcolaPMT(tassoMensile, nRate, capitale) {
+  if (tassoMensile === 0) return -(capitale / nRate);
+  const r = tassoMensile;
+  return -(capitale * r / (1 - Math.pow(1 + r, -nRate)));
+}
+
+function aggiornaSimulazione() {
+  const u = getUnitaCorrente();
+  const scenario = scenarioSel.value; // "48mesi", "60gg", "grezzo"
+  let mese = parseInt(meseInput.value, 10);
+  if (isNaN(mese) || mese < 1) mese = 1;
+  if (mese > 48) mese = 48;
+  meseInput.value = mese;
+
+  const capPerc = Math.max(0, parseFloat(caparraPercInput.value) || 0);
+  const cap1 = Math.max(0, parseFloat(cap1Input.value) || 0);
+  const cap2 = Math.max(0, parseFloat(cap2Input.value) || 0);
+  const cap3 = Math.max(0, parseFloat(cap3Input.value) || 0);
+  const reddito = Math.max(0, parseFloat(redditoInput.value) || 0);
+
+  // 1) Prezzo di riferimento secondo la logica definita
+  let prezzoRif = 0;
+  if (scenario === "grezzo") {
+    prezzoRif = u.prezzoGrezzo || 0;
+  } else if (scenario === "48mesi") {
+    if (mese <= 2) {
+      prezzoRif = u.prezzo60;
+    } else {
+      prezzoRif = u.prezzo48;
+    }
+  } else if (scenario === "60gg") {
+    prezzoRif = u.prezzo60;
+  } else {
+    prezzoRif = u.prezzo48;
+  }
+
+  // 2) Caparra iniziale in €
+  const caparraIniziale = prezzoRif > 0 ? prezzoRif * capPerc / 100 : 0;
+
+  // 3) Totale caparre versate prima del saldo
+  let totCaparre = caparraIniziale;
+  if (mese > 12) totCaparre += cap1;
+  if (mese > 24) totCaparre += cap2;
+  if (mese > 36) totCaparre += cap3;
+
+  // 4) Quota prezzo già versata
+  const quotaVersata = (prezzoRif > 0) ? (totCaparre / prezzoRif) : 0;
+
+  // 5) Canone teorico ridotto
+  const canonePieno = u.canoneMensile || 0;
+  const canoneRidotto = Math.max(0, canonePieno * (1 - quotaVersata));
+
+  // 6) Sconto saldo anticipato
+  let scontoEuro = 0;
+  const isScenario48 = (scenario === "48mesi");
+  if (!(mese <= 2 || scenario === "60gg" || scenario === "grezzo")) {
+    if (isScenario48) {
+      if (mese >= 1 && mese <= 12) {
+        scontoEuro = 36 * canoneRidotto;
+      } else if (mese >= 13 && mese <= 18) {
+        scontoEuro = 24 * canoneRidotto;
+      } else if (mese >= 19 && mese <= 24) {
+        scontoEuro = 12 * canoneRidotto;
+      }
+    }
+  }
+
+  // 7) Sconto %
+  const scontoPerc = (prezzoRif > 0 && scontoEuro > 0) ? (scontoEuro / prezzoRif) : 0;
+
+  // 8) Saldo finale
+  const saldoFinale = prezzoRif > 0 ? (prezzoRif - totCaparre - scontoEuro) : 0;
+
+  // 9) Mutuo = saldo finale
+  const mutuo = saldoFinale > 0 ? saldoFinale : 0;
+
+  // 10) Rata mutuo
+  let rata = 0;
+  if (mutuo > 0) {
+    rata = calcolaPMT(0.028 / 12, 30 * 12, mutuo);
+    rata = -rata;
+  }
+
+  // 11) Rapporto rata/reddito
+  const rapporto = (rata > 0 && reddito > 0) ? (rata / reddito) : 0;
+
+  // 12) Esito
+  let esito = "";
+  let esitoClass = "";
+  if (rata > 0 && reddito > 0) {
+    if (rapporto <= 0.3) {
+      esito = "OK: rata entro il 30% del reddito";
+      esitoClass = "ok";
+    } else {
+      esito = "ATTENZIONE: rata oltre il 30% del reddito";
+      esitoClass = "warn";
+    }
+  }
+
+  // 13) Prezzo complessivo pagato netto sconti
+  const prezzoNetto = prezzoRif > 0 ? (prezzoRif - scontoEuro) : 0;
+
+  // --- Output ---
+  document.getElementById('outPrezzoRif').textContent = prezzoRif ? formatterEuro.format(prezzoRif) : "-";
+  document.getElementById('outCaparraIniziale').textContent = formatterEuro.format(caparraIniziale);
+  document.getElementById('outTotCaparre').textContent = formatterEuro.format(totCaparre);
+  document.getElementById('outQuotaVersata').textContent = formatterPerc.format(quotaVersata);
+  document.getElementById('outCanoni').textContent =
+    `${formatterEuro.format(canonePieno)} → ${formatterEuro.format(canoneRidotto)}`;
+  document.getElementById('outScontoEuro').textContent = scontoEuro ? formatterEuro.format(scontoEuro) : "—";
+  document.getElementById('outScontoPerc').textContent = scontoEuro ? formatterPerc.format(scontoPerc) : "—";
+  document.getElementById('outSaldoFinale').textContent = formatterEuro.format(saldoFinale);
+  document.getElementById('outMutuo').textContent = mutuo ? formatterEuro.format(mutuo) : "—";
+  document.getElementById('outRata').textContent = rata ? formatterEuro.format(rata) : "—";
+  document.getElementById('outRapporto').textContent = (rata && reddito) ? formatterPerc.format(rapporto) : "—";
+
+  const esitoSpan = document.getElementById('outEsito');
+  esitoSpan.textContent = esito || "—";
+  esitoSpan.className = esitoClass;
+
+  document.getElementById('outPrezzoNetto').textContent = prezzoNetto ? formatterEuro.format(prezzoNetto) : "—";
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  popolaSelect();
+  aggiornaInfoUnita();
+  aggiornaSimulazione();
+
+  unitaSelect.addEventListener('change', () => {
+    aggiornaInfoUnita();
+    aggiornaSimulazione();
+  });
+
+  [scenarioSel, meseInput, caparraPercInput, cap1Input, cap2Input, cap3Input, redditoInput]
+    .forEach(el => el.addEventListener('input', aggiornaSimulazione));
+});
+</script>
+</body>
+</html>
